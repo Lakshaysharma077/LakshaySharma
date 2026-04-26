@@ -136,37 +136,45 @@ const Particles = () => {
   return <div id="particles-container" ref={containerRef} />;
 };
 
-const Home = ({ mainRef, cursorRef }) => {
-  useLayoutEffect(() => {
-    const initGSAP = () => {
-      if (!mainRef.current) return;
-      
-      document.body.classList.add('home-active');
-      document.documentElement.classList.add('home-active');
-      
-      let ctx = gsap.context((self) => {
-        const q = self.selector;
-        
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            id: 'mainScroll',
-            trigger: document.documentElement,
-            start: 'top top',
-            end: 'bottom bottom',
-            scrub: 1,
-            invalidateOnRefresh: true,
-            anticipatePin: 1
-          }
-        });
+const Home = ({ mainRef }) => {
+  // FIX 1: Use a local ref for the home section, not mainRef.current as dependency
+  const homeRef = useRef();
 
-      // Scene Transitions with visibility management
+  useLayoutEffect(() => {
+    // FIX 2: Add home-active class BEFORE GSAP init so the page has correct height
+    document.body.classList.add('home-active');
+    document.documentElement.classList.add('home-active');
+
+    // FIX 3: Use the wrapper div ref, not mainRef.current
+    const el = homeRef.current;
+    if (!el) return;
+
+    // FIX 4: Kill any leftover ScrollTriggers from previous renders
+    ScrollTrigger.getAll().forEach(t => t.kill());
+
+    let ctx = gsap.context((self) => {
+      const q = self.selector;
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          id: 'mainScroll',
+          trigger: document.documentElement,
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 1,
+          invalidateOnRefresh: true,
+          anticipatePin: 1,
+        }
+      });
+
+      // Scene Transitions
       tl.set(q('#scene-1'), { visibility: 'visible' });
-      
+
       // Scene 1 -> 2
       tl.to(q('.hero-text'), { xPercent: 100, x: '40vw', opacity: 0, ease: 'power1.inOut' }, 0.5);
       tl.to(q('#undergrad-card'), { y: -300, opacity: 0, ease: 'power2.inOut' }, 0.5);
       tl.set(q('#scene-1'), { visibility: 'hidden' }, 1.5);
-      
+
       tl.set(q('#scene-2'), { visibility: 'visible' }, 1.5);
       tl.to(q('#card-dev'), { y: -50, opacity: 1, duration: 1 }, 1.5);
       tl.to(q('#card-dev'), { y: -150, opacity: 0, duration: 1 }, 2.5);
@@ -178,10 +186,15 @@ const Home = ({ mainRef, cursorRef }) => {
       tl.set(q('#scene-3'), { visibility: 'visible' }, 3.5);
       tl.to(q('#bg-0'), { opacity: 0, duration: 1.5 }, 3.5);
       tl.to(q('#bg-1'), { opacity: 1, duration: 1.5 }, 3.5);
-      
+
       const navItems = q('.nav-item');
       navItems.forEach((item, index) => {
-        tl.fromTo(item, { opacity: 0, x: 50 }, { opacity: 1, x: 0, color: index === 1 ? '#ffffff' : 'rgba(255,255,255,0.05)', duration: 0.5 }, 4 + (index * 0.2));
+        tl.fromTo(
+          item,
+          { opacity: 0, x: 50 },
+          { opacity: 1, x: 0, color: index === 1 ? '#ffffff' : 'rgba(255,255,255,0.05)', duration: 0.5 },
+          4 + (index * 0.2)
+        );
       });
 
       tl.to(q('.project-list'), { opacity: 1, x: 0, duration: 1 }, 4.5);
@@ -192,7 +205,7 @@ const Home = ({ mainRef, cursorRef }) => {
       tl.set(q('#scene-about'), { visibility: 'visible' }, 5.5);
       tl.to(q('#bg-1'), { opacity: 0, duration: 1.5 }, 5.5);
       tl.to(q('#bg-3'), { opacity: 1, duration: 1.5 }, 5.5);
-      
+
       tl.fromTo(q('.about-left'), { x: -100, opacity: 0 }, { x: 0, opacity: 1, duration: 1 }, 6);
       tl.fromTo(q('.about-right'), { x: 100, opacity: 0 }, { x: 0, opacity: 1, duration: 1 }, 6.2);
       tl.to([q('.about-left'), q('.about-right')], { opacity: 0, y: -50, duration: 0.5 }, 7.5);
@@ -202,60 +215,110 @@ const Home = ({ mainRef, cursorRef }) => {
       tl.set(q('#scene-4'), { visibility: 'visible' }, 7.5);
       tl.fromTo(q('.footer-content'), { y: 100, opacity: 0 }, { y: 0, opacity: 1, duration: 1.5 }, 8);
 
-        ScrollTrigger.refresh();
-      }, mainRef.current);
-      return ctx;
-    };
+    }, el); // FIX 5: Scope to local homeRef el, not mainRef
 
-    const ctx = initGSAP();
-    
-    const handleLoad = () => ScrollTrigger.refresh();
-    window.addEventListener('load', handleLoad);
-    
-    // Fallback refresh for dynamic content
-    const timer = setTimeout(() => ScrollTrigger.refresh(), 500);
+    // FIX 6: Refresh after fonts/images load — use both load event and a delayed fallback
+    const doRefresh = () => ScrollTrigger.refresh(true);
+
+    if (document.readyState === 'complete') {
+      // Already loaded (common in production after hydration)
+      doRefresh();
+    } else {
+      window.addEventListener('load', doRefresh, { once: true });
+    }
+
+    // Extra safety: refresh after 800ms for lazy-loaded assets
+    const timer1 = setTimeout(doRefresh, 800);
+    const timer2 = setTimeout(doRefresh, 1500);
 
     return () => {
-      if (ctx) ctx.revert();
-      window.removeEventListener('load', handleLoad);
-      clearTimeout(timer);
+      ctx.revert();
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       document.body.classList.remove('home-active');
       document.documentElement.classList.remove('home-active');
     };
-  }, [mainRef.current]);
+  }, []); // FIX 7: Empty dependency array — run once on mount
 
   return (
-    <>
+    // FIX 8: Attach homeRef to a wrapper div so gsap.context scopes correctly
+    <div ref={homeRef}>
       <Particles />
       <div className="main-bg-container">
-        <div className="bg-image-wrapper" id="bg-0"><img src="/image_0.png" alt="Hero" className="full-bg-img" /><div className="hero-overlay" /></div>
-        <div className="bg-image-wrapper" id="bg-1" style={{ opacity: 0 }}><img src="/image_1.png" alt="Work" className="full-bg-img" /><div className="hero-overlay gritty-overlay" /></div>
-        <div className="bg-image-wrapper" id="bg-3" style={{ opacity: 0 }}><img src="/IMG_3479.PNG" alt="About" className="full-bg-img" /><div className="hero-overlay deep-red-overlay" /></div>
+        <div className="bg-image-wrapper" id="bg-0">
+          <img src="/image_0.png" alt="Hero" className="full-bg-img" />
+          <div className="hero-overlay" />
+        </div>
+        <div className="bg-image-wrapper" id="bg-1" style={{ opacity: 0 }}>
+          <img src="/image_1.png" alt="Work" className="full-bg-img" />
+          <div className="hero-overlay gritty-overlay" />
+        </div>
+        <div className="bg-image-wrapper" id="bg-3" style={{ opacity: 0 }}>
+          <img src="/IMG_3479.PNG" alt="About" className="full-bg-img" />
+          <div className="hero-overlay deep-red-overlay" />
+        </div>
       </div>
 
       <section className="scene" id="scene-1">
         <div className="hero-content">
-          <div className="hero-top-info"><span className="location-tag">BASED IN INDIA — AVAILABLE WORLDWIDE</span></div>
-          <div className="hero-text"><h1 className="glitch-text" data-text="LAKSHAY SHARMA">LAKSHAY SHARMA</h1><div className="hero-subline"><span className="accent-dash" /><span className="sub-text">CREATIVE TECHNOLOGIST & DIGITAL CRAFTSMAN</span></div></div>
-          <div id="undergrad-card"><span className="card-label">CURRENT PURSUIT</span><h2 className="card-title">3RD YEAR UNDERGRAD</h2><p className="card-desc">Specializing in immersive web experiences and functional aesthetics.</p></div>
+          <div className="hero-top-info">
+            <span className="location-tag">BASED IN INDIA — AVAILABLE WORLDWIDE</span>
+          </div>
+          <div className="hero-text">
+            <h1 className="glitch-text" data-text="LAKSHAY SHARMA">LAKSHAY SHARMA</h1>
+            <div className="hero-subline">
+              <span className="accent-dash" />
+              <span className="sub-text">CREATIVE TECHNOLOGIST & DIGITAL CRAFTSMAN</span>
+            </div>
+          </div>
+          <div id="undergrad-card">
+            <span className="card-label">CURRENT PURSUIT</span>
+            <h2 className="card-title">3RD YEAR UNDERGRAD</h2>
+            <p className="card-desc">Specializing in immersive web experiences and functional aesthetics.</p>
+          </div>
         </div>
-        <div className="scroll-indicator"><div className="mouse"><div className="wheel" /></div><span className="scroll-text">DISCOVER THE CRAFT</span></div>
+        <div className="scroll-indicator">
+          <div className="mouse"><div className="wheel" /></div>
+          <span className="scroll-text">DISCOVER THE CRAFT</span>
+        </div>
       </section>
 
       <section className="scene" id="scene-2">
-        <div className="vibe-card" id="card-dev"><span className="card-number">01</span><h3>1.5+ YRS WEB DEV & EDITING</h3></div>
-        <div className="vibe-card" id="card-vibe"><span className="card-number">02</span><h3>VIBE CODING SPECIALIST</h3></div>
+        <div className="vibe-card" id="card-dev">
+          <span className="card-number">01</span>
+          <h3>1.5+ YRS WEB DEV & EDITING</h3>
+        </div>
+        <div className="vibe-card" id="card-vibe">
+          <span className="card-number">02</span>
+          <h3>VIBE CODING SPECIALIST</h3>
+        </div>
       </section>
 
       <section className="scene" id="scene-3">
         <div className="content-grid-right">
           <div className="empty-panel" />
           <div className="project-display">
-            <div className="sidebar-nav-right"><div className="nav-item">EXPERIENCE</div><div className="nav-item active-project">PROJECTS</div><div className="nav-item">CONTACT</div></div>
+            <div className="sidebar-nav-right">
+              <div className="nav-item">EXPERIENCE</div>
+              <div className="nav-item active-project">PROJECTS</div>
+              <div className="nav-item">CONTACT</div>
+            </div>
             <div className="project-list">
-              <div className="project-item"><span className="project-year">2024</span><a href="https://class-track.live" className="project-link">CLASS-TRACK.LIVE</a><p className="project-desc">University Management System for streamlined tracking.</p></div>
-              <div className="project-item"><span className="project-year">2023</span><a href="https://ksonsinternationalltd.com" className="project-link">KSONS INTERNATIONAL</a><p className="project-desc">Industrial export and global trade platform.</p></div>
-              <div className="project-item"><span className="project-year">2023</span><a href="https://ksonsexteriors.com" className="project-link">KSONS EXTERIORS</a><p className="project-desc">Premium exterior design and architectural solutions.</p></div>
+              <div className="project-item">
+                <span className="project-year">2024</span>
+                <a href="https://class-track.live" className="project-link">CLASS-TRACK.LIVE</a>
+                <p className="project-desc">University Management System for streamlined tracking.</p>
+              </div>
+              <div className="project-item">
+                <span className="project-year">2023</span>
+                <a href="https://ksonsinternationalltd.com" className="project-link">KSONS INTERNATIONAL</a>
+                <p className="project-desc">Industrial export and global trade platform.</p>
+              </div>
+              <div className="project-item">
+                <span className="project-year">2023</span>
+                <a href="https://ksonsexteriors.com" className="project-link">KSONS EXTERIORS</a>
+                <p className="project-desc">Premium exterior design and architectural solutions.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -263,11 +326,22 @@ const Home = ({ mainRef, cursorRef }) => {
 
       <section className="scene" id="scene-about">
         <div className="about-container">
-          <div className="about-left"><span className="about-label">PERSONAL</span><h2 className="about-title">WHO I AM</h2><p className="about-text">A 3rd-year undergraduate specializing in "vibe coding"—creating digital experiences that feel as good as they function.</p></div>
-          <div className="about-right"><span className="about-label">INTERESTS</span>
+          <div className="about-left">
+            <span className="about-label">PERSONAL</span>
+            <h2 className="about-title">WHO I AM</h2>
+            <p className="about-text">A 3rd-year undergraduate specializing in "vibe coding"—creating digital experiences that feel as good as they function.</p>
+          </div>
+          <div className="about-right">
+            <span className="about-label">INTERESTS</span>
             <div className="hobby-list">
-              <div className="hobby-item"><span className="hobby-num">01</span><div><h4>Creative Editing</h4><p>Manipulating visual narratives with industrial grit.</p></div></div>
-              <div className="hobby-item"><span className="hobby-num">02</span><div><h4>Industrial Design</h4><p>Exploring the intersection of raw textures and modern tech.</p></div></div>
+              <div className="hobby-item">
+                <span className="hobby-num">01</span>
+                <div><h4>Creative Editing</h4><p>Manipulating visual narratives with industrial grit.</p></div>
+              </div>
+              <div className="hobby-item">
+                <span className="hobby-num">02</span>
+                <div><h4>Industrial Design</h4><p>Exploring the intersection of raw textures and modern tech.</p></div>
+              </div>
             </div>
           </div>
         </div>
@@ -275,14 +349,25 @@ const Home = ({ mainRef, cursorRef }) => {
 
       <section className="scene" id="scene-4">
         <div className="footer-content">
-          <div className="footer-top"><span className="footer-label">GET IN TOUCH</span><h2 className="footer-title">LET'S BUILD SOMETHING EXTRAORDINARY</h2></div>
+          <div className="footer-top">
+            <span className="footer-label">GET IN TOUCH</span>
+            <h2 className="footer-title">LET'S BUILD SOMETHING EXTRAORDINARY</h2>
+          </div>
           <div className="footer-grid">
-            <div className="footer-column"><span className="col-label">CONTACT</span><a href="tel:+918295895319" className="footer-info link-underline">+91 82958 95319</a><a href="mailto:lakshaysharma866@gmail.com" className="footer-info link-underline">lakshaysharma866@gmail.com</a></div>
-            <div className="footer-column"><span className="col-label">SOCIAL</span><a href="https://github.com/Lakshaysharma077" className="footer-info link-underline">GITHUB</a><a href="https://linkedin.com" className="footer-info link-underline">LINKEDIN</a></div>
+            <div className="footer-column">
+              <span className="col-label">CONTACT</span>
+              <a href="tel:+918295895319" className="footer-info link-underline">+91 82958 95319</a>
+              <a href="mailto:lakshaysharma866@gmail.com" className="footer-info link-underline">lakshaysharma866@gmail.com</a>
+            </div>
+            <div className="footer-column">
+              <span className="col-label">SOCIAL</span>
+              <a href="https://github.com/Lakshaysharma077" className="footer-info link-underline">GITHUB</a>
+              <a href="https://linkedin.com" className="footer-info link-underline">LINKEDIN</a>
+            </div>
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 };
 
@@ -427,7 +512,7 @@ const App = () => {
         <div className="vignette" />
         
         <Routes>
-          <Route path="/" element={<Home mainRef={mainRef} cursorRef={cursorRef} />} />
+          <Route path="/" element={<Home mainRef={mainRef} />} />
           <Route path="/hire" element={<HireMe />} />
         </Routes>
       </div>
