@@ -272,7 +272,8 @@ const HireMe = () => {
     setStatus('loading');
     
     try {
-      const response = await fetch('http://localhost:3001/api/send-email', {
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${backendUrl}/api/send-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
