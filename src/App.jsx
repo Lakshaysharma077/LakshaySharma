@@ -138,24 +138,25 @@ const Particles = () => {
 
 const Home = ({ mainRef, cursorRef }) => {
   useLayoutEffect(() => {
-    document.body.classList.add('home-active');
-    if (!mainRef.current) return;
-    
-    document.body.classList.add('home-active');
-    
-    let ctx = gsap.context((self) => {
-      const q = self.selector;
+    const initGSAP = () => {
+      if (!mainRef.current) return;
       
-      // Scroll Timeline
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          id: 'mainScroll',
-          trigger: 'body',
-          start: 'top top',
-          end: 'bottom bottom',
-          scrub: 1.5,
-        }
-      });
+      document.body.classList.add('home-active');
+      document.documentElement.classList.add('home-active');
+      
+      let ctx = gsap.context((self) => {
+        const q = self.selector;
+        
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            id: 'mainScroll',
+            trigger: 'body',
+            start: 'top top',
+            end: 'bottom bottom',
+            scrub: 1.5,
+            invalidateOnRefresh: true
+          }
+        });
 
       // Scene Transitions with visibility management
       tl.set('#scene-1', { visibility: 'visible' });
@@ -200,15 +201,23 @@ const Home = ({ mainRef, cursorRef }) => {
       tl.set(q('#scene-4'), { visibility: 'visible' }, 7.5);
       tl.fromTo(q('.footer-content'), { y: 100, opacity: 0 }, { y: 0, opacity: 1, duration: 1.5 }, 8);
 
-      // Force refresh after all animations are added
-      ScrollTrigger.refresh();
-
-    }, mainRef.current);
-    return () => {
-      ctx.revert();
-      document.body.classList.remove('home-active');
+        ScrollTrigger.refresh();
+      }, mainRef.current);
+      return ctx;
     };
-  }, []);
+
+    const ctx = initGSAP();
+    
+    // Fallback refresh for dynamic content
+    const timer = setTimeout(() => ScrollTrigger.refresh(), 500);
+
+    return () => {
+      if (ctx) ctx.revert();
+      clearTimeout(timer);
+      document.body.classList.remove('home-active');
+      document.documentElement.classList.remove('home-active');
+    };
+  }, [mainRef]);
 
   return (
     <>

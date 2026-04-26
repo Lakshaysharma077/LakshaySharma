@@ -31,8 +31,9 @@ body {
     min-height: 100vh;
 }
 
-body.home-active {
+html.home-active, body.home-active {
     height: 1400vh;
+    overflow-y: auto;
 }
 
 /* Overlays */
