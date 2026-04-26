@@ -150,16 +150,17 @@ const Home = ({ mainRef, cursorRef }) => {
         const tl = gsap.timeline({
           scrollTrigger: {
             id: 'mainScroll',
-            trigger: 'body',
+            trigger: document.documentElement,
             start: 'top top',
             end: 'bottom bottom',
-            scrub: 1.5,
-            invalidateOnRefresh: true
+            scrub: 1,
+            invalidateOnRefresh: true,
+            anticipatePin: 1
           }
         });
 
       // Scene Transitions with visibility management
-      tl.set('#scene-1', { visibility: 'visible' });
+      tl.set(q('#scene-1'), { visibility: 'visible' });
       
       // Scene 1 -> 2
       tl.to(q('.hero-text'), { xPercent: 100, x: '40vw', opacity: 0, ease: 'power1.inOut' }, 0.5);
