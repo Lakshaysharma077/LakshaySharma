@@ -208,16 +208,20 @@ const Home = ({ mainRef, cursorRef }) => {
 
     const ctx = initGSAP();
     
+    const handleLoad = () => ScrollTrigger.refresh();
+    window.addEventListener('load', handleLoad);
+    
     // Fallback refresh for dynamic content
     const timer = setTimeout(() => ScrollTrigger.refresh(), 500);
 
     return () => {
       if (ctx) ctx.revert();
+      window.removeEventListener('load', handleLoad);
       clearTimeout(timer);
       document.body.classList.remove('home-active');
       document.documentElement.classList.remove('home-active');
     };
-  }, [mainRef]);
+  }, [mainRef.current]);
 
   return (
     <>
