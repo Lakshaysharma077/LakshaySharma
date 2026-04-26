@@ -139,63 +139,71 @@ const Particles = () => {
 const Home = ({ mainRef, cursorRef }) => {
   useLayoutEffect(() => {
     document.body.classList.add('home-active');
-      if (!mainRef.current) return;
-      let ctx = gsap.context(() => {
-        // Scroll Timeline
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            id: 'mainScroll',
-            trigger: 'body',
-            start: 'top top',
-            end: 'bottom bottom',
-            scrub: 1.5,
-          }
-        });
+    if (!mainRef.current) return;
+    
+    document.body.classList.add('home-active');
+    
+    let ctx = gsap.context((self) => {
+      const q = self.selector;
+      
+      // Scroll Timeline
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          id: 'mainScroll',
+          trigger: 'body',
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 1.5,
+        }
+      });
 
-        // Scene Transitions with visibility management
-        tl.set('#scene-1', { visibility: 'visible' });
-        
-        // Scene 1 -> 2
-        tl.to('.hero-text', { xPercent: 100, x: '40vw', opacity: 0, ease: 'power1.inOut' }, 0.5);
-        tl.to('#undergrad-card', { y: -300, opacity: 0, ease: 'power2.inOut' }, 0.5);
-        tl.set('#scene-1', { visibility: 'hidden' }, 1.5);
-        
-        tl.set('#scene-2', { visibility: 'visible' }, 1.5);
-        tl.to('#card-dev', { y: -50, opacity: 1, duration: 1 }, 1.5);
-        tl.to('#card-dev', { y: -150, opacity: 0, duration: 1 }, 2.5);
-        tl.to('#card-vibe', { y: -50, opacity: 1, duration: 1 }, 2);
-        tl.to('#card-vibe', { y: -150, opacity: 0, duration: 1 }, 3);
-        tl.set('#scene-2', { visibility: 'hidden' }, 3.5);
+      // Scene Transitions with visibility management
+      tl.set('#scene-1', { visibility: 'visible' });
+      
+      // Scene 1 -> 2
+      tl.to(q('.hero-text'), { xPercent: 100, x: '40vw', opacity: 0, ease: 'power1.inOut' }, 0.5);
+      tl.to(q('#undergrad-card'), { y: -300, opacity: 0, ease: 'power2.inOut' }, 0.5);
+      tl.set(q('#scene-1'), { visibility: 'hidden' }, 1.5);
+      
+      tl.set(q('#scene-2'), { visibility: 'visible' }, 1.5);
+      tl.to(q('#card-dev'), { y: -50, opacity: 1, duration: 1 }, 1.5);
+      tl.to(q('#card-dev'), { y: -150, opacity: 0, duration: 1 }, 2.5);
+      tl.to(q('#card-vibe'), { y: -50, opacity: 1, duration: 1 }, 2);
+      tl.to(q('#card-vibe'), { y: -150, opacity: 0, duration: 1 }, 3);
+      tl.set(q('#scene-2'), { visibility: 'hidden' }, 3.5);
 
-        // Scene 3
-        tl.set('#scene-3', { visibility: 'visible' }, 3.5);
-        tl.to('#bg-0', { opacity: 0, duration: 1.5 }, 3.5);
-        tl.to('#bg-1', { opacity: 1, duration: 1.5 }, 3.5);
-        
-        const navItems = gsap.utils.toArray('.nav-item');
-        navItems.forEach((item, index) => {
-          tl.fromTo(item, { opacity: 0, x: 50 }, { opacity: 1, x: 0, color: index === 1 ? '#ffffff' : 'rgba(255,255,255,0.05)', duration: 0.5 }, 4 + (index * 0.2));
-        });
+      // Scene 3
+      tl.set(q('#scene-3'), { visibility: 'visible' }, 3.5);
+      tl.to(q('#bg-0'), { opacity: 0, duration: 1.5 }, 3.5);
+      tl.to(q('#bg-1'), { opacity: 1, duration: 1.5 }, 3.5);
+      
+      const navItems = q('.nav-item');
+      navItems.forEach((item, index) => {
+        tl.fromTo(item, { opacity: 0, x: 50 }, { opacity: 1, x: 0, color: index === 1 ? '#ffffff' : 'rgba(255,255,255,0.05)', duration: 0.5 }, 4 + (index * 0.2));
+      });
 
-        tl.to('.project-list', { opacity: 1, x: 0, duration: 1 }, 4.5);
-        tl.to('.project-list', { opacity: 0, y: -50, duration: 0.5 }, 5.5);
-        tl.set('#scene-3', { visibility: 'hidden' }, 5.5);
+      tl.to(q('.project-list'), { opacity: 1, x: 0, duration: 1 }, 4.5);
+      tl.to(q('.project-list'), { opacity: 0, y: -50, duration: 0.5 }, 5.5);
+      tl.set(q('#scene-3'), { visibility: 'hidden' }, 5.5);
 
-        // Scene About
-        tl.set('#scene-about', { visibility: 'visible' }, 5.5);
-        tl.to('#bg-1', { opacity: 0, duration: 1.5 }, 5.5);
-        tl.to('#bg-3', { opacity: 1, duration: 1.5 }, 5.5);
-        
-        tl.fromTo('.about-left', { x: -100, opacity: 0 }, { x: 0, opacity: 1, duration: 1 }, 6);
-        tl.fromTo('.about-right', { x: 100, opacity: 0 }, { x: 0, opacity: 1, duration: 1 }, 6.2);
-        tl.to(['.about-left', '.about-right'], { opacity: 0, y: -50, duration: 0.5 }, 7.5);
-        tl.set('#scene-about', { visibility: 'hidden' }, 7.5);
+      // Scene About
+      tl.set(q('#scene-about'), { visibility: 'visible' }, 5.5);
+      tl.to(q('#bg-1'), { opacity: 0, duration: 1.5 }, 5.5);
+      tl.to(q('#bg-3'), { opacity: 1, duration: 1.5 }, 5.5);
+      
+      tl.fromTo(q('.about-left'), { x: -100, opacity: 0 }, { x: 0, opacity: 1, duration: 1 }, 6);
+      tl.fromTo(q('.about-right'), { x: 100, opacity: 0 }, { x: 0, opacity: 1, duration: 1 }, 6.2);
+      tl.to([q('.about-left'), q('.about-right')], { opacity: 0, y: -50, duration: 0.5 }, 7.5);
+      tl.set(q('#scene-about'), { visibility: 'hidden' }, 7.5);
 
-        // Scene 4: Footer
-        tl.set('#scene-4', { visibility: 'visible' }, 7.5);
-        tl.fromTo('.footer-content', { y: 100, opacity: 0 }, { y: 0, opacity: 1, duration: 1.5 }, 8);
+      // Scene 4: Footer
+      tl.set(q('#scene-4'), { visibility: 'visible' }, 7.5);
+      tl.fromTo(q('.footer-content'), { y: 100, opacity: 0 }, { y: 0, opacity: 1, duration: 1.5 }, 8);
 
-      }, mainRef.current);
+      // Force refresh after all animations are added
+      ScrollTrigger.refresh();
+
+    }, mainRef.current);
     return () => {
       ctx.revert();
       document.body.classList.remove('home-active');
